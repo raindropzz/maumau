@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Lobby Browser</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #ecf0f1;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #34495e;
+      padding: 20px;
+      color: #fff;
+      text-align: center;
+      position: relative;
+    }
+    /* Spielername in Fett (oben links) */
+    #myName {
+      position: absolute;
+      left: 20px;
+      top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    /* Elo-Anzeige */
+    #myElo {
+      position: absolute;
+      left: 20px;
+      top: 50px;
+      font-size: 18px;
+      color: #fff;
+    }
+    header button#logoutBtn {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    main {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    form {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    form input, form button {
+      padding: 5px 10px;
+      margin: 5px;
+    }
+    form input {
+      width: 250px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin: 10px 0;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .openLobby {
+      background: #d4edda;
+      border: 1px solid #28a745;
+    }
+    .startedLobby {
+      background: #f8d7da;
+      border: 1px solid #dc3545;
+    }
+    button {
+      padding: 5px 10px;
+      background: #2c3e50;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #34495e;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Lobby Browser</h1>
+    <div id="myName"></div>
+    <div id="myElo"></div>
+    <button id="logoutBtn" title="Ausloggen">Ausloggen</button>
+  </header>
+  <main>
+    <form id="createLobbyForm">
+      <input type="text" id="lobbyName" placeholder="Lobbynamen (max. 20 Zeichen)" maxlength="20" required>
+      <button type="submit">Neue Lobby erstellen</button>
+    </form>
+    <h2>Offene Lobbies:</h2>
+    <ul id="openLobbyList"></ul>
+    <h2>Gestartete Lobbies:</h2>
+    <ul id="startedLobbyList"></ul>
+    <script>
+      const socket = io();
+      
+      let username = localStorage.getItem('username') || "";
+      if (!username) {
+        window.location.href = '/login';
+      }
+      
+      // Setze den Spielernamen im Header
+      document.getElementById('myName').textContent = username;
+      
+      // Hole eigene Elo
+      socket.emit('getMyElo', { username: username });
+      socket.on('myElo', (data) => {
+        document.getElementById('myElo').textContent = "Dein Elo: " + data.elo;
+      });
+      
+      // Logout
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        window.location.href = '/logout?username=' + encodeURIComponent(username);
+      });
+      
+      function requestLobbyList() {
+        socket.emit('getLobbyList');
+      }
+      
+      socket.on('connect', () => {
+        requestLobbyList();
+      });
+      
+      socket.on('lobbyList', function(lobbies) {
+        const openLobbies = lobbies.filter(lobby => !lobby.started);
+        const startedLobbies = lobbies.filter(lobby => lobby.started && lobby.players.includes(username));
+        
+        const openLobbyListElem = document.getElementById('openLobbyList');
+        const startedLobbyListElem = document.getElementById('startedLobbyList');
+        openLobbyListElem.innerHTML = '';
+        startedLobbyListElem.innerHTML = '';
+        
+        const alreadyInLobby = lobbies.some(lobby => lobby.players.includes(username));
+        document.getElementById('createLobbyForm').style.display = alreadyInLobby ? 'none' : 'block';
+        
+        openLobbies.forEach(lobby => {
+          let li = document.createElement('li');
+          li.classList.add('openLobby');
+          li.innerHTML = `<strong>${lobby.name}</strong> (ID: ${lobby.id}) - Host: ${lobby.host} (ELO: ${lobby.playerElos[lobby.host]}) - Spieler: ${lobby.players.length}/${lobby.maxPlayers}`;
+          if (!lobby.started) {
+            if (lobby.host === username) {
+              // Button zum Rundenstart
+              let startBtn = document.createElement('button');
+              startBtn.textContent = 'Runde starten';
+              startBtn.addEventListener('click', () => {
+                socket.emit('startRound', { lobbyId: lobby.id, username: username });
+              });
+              li.appendChild(startBtn);
+              // "x"-Button zum Schließen der eigenen Lobby
+              let closeBtn = document.createElement('button');
+              closeBtn.textContent = 'x';
+              closeBtn.addEventListener('click', () => {
+                socket.emit('leaveLobby', { lobbyId: lobby.id, username: username });
+              });
+              li.appendChild(closeBtn);
+            } else if (!alreadyInLobby) {
+              let joinBtn = document.createElement('button');
+              joinBtn.textContent = 'Beitreten';
+              joinBtn.addEventListener('click', () => {
+                socket.emit('joinLobby', { lobbyId: lobby.id, username: username });
+              });
+              li.appendChild(joinBtn);
+            }
+            if (lobby.players.includes(username) && lobby.host !== username) {
+              let leaveBtn = document.createElement('button');
+              leaveBtn.textContent = 'Lobby verlassen';
+              leaveBtn.addEventListener('click', () => {
+                socket.emit('leaveLobby', { lobbyId: lobby.id, username: username });
+              });
+              li.appendChild(leaveBtn);
+            }
+          }
+          openLobbyListElem.appendChild(li);
+        });
+        
+        // Für gestartete Lobbies, in denen der Spieler ist, zeigen wir einen "Zum Spiel"-Button an
+        startedLobbies.forEach(lobby => {
+          let li = document.createElement('li');
+          li.classList.add('startedLobby');
+          li.innerHTML = `<strong>${lobby.name}</strong> (ID: ${lobby.id}) - Host: ${lobby.host} (ELO: ${lobby.playerElos[lobby.host]}) - Spieler: ${lobby.players.length}/${lobby.maxPlayers}`;
+          let gameBtn = document.createElement('button');
+          gameBtn.textContent = 'Zum Spiel';
+          gameBtn.addEventListener('click', () => {
+            localStorage.setItem('lobbyId', lobby.id);
+            window.location.href = '/game';
+          });
+          li.appendChild(gameBtn);
+          startedLobbyListElem.appendChild(li);
+        });
+      });
+      
+      document.getElementById('createLobbyForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const lobbyName = document.getElementById('lobbyName').value.trim();
+        if (lobbyName.length > 20) {
+          alert("Der Lobbynamen darf maximal 20 Zeichen lang sein.");
+          return;
+        }
+        socket.emit('createLobby', { username: username, lobbyName: lobbyName });
+      });
+      
+      socket.on('gameStarted', function(lobby) {
+        localStorage.setItem('lobbyId', lobby.id);
+        window.location.href = '/game';
+      });
+    </script>
+  </main>
+</body>
+</html>

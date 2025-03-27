@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Startseite</title>
+  <script>
+    // Automatische Weiterleitung, wenn der Benutzer bereits eingeloggt ist
+    if (localStorage.getItem('username')) {
+      window.location.href = '/lobby';
+    }
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #ecf0f1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      font-size: 32px;
+      color: #34495e;
+    }
+  </style>
+</head>
+<body>
+  <h1>Willkommen bei Mau Mau</h1>
+  <p><a href="/login">Login</a> | <a href="/register">Registrieren</a></p>
+</body>
+</html>
