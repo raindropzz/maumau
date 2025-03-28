@@ -9,35 +9,119 @@
       background: #ecf0f1;
       margin: 0;
       padding: 0;
+      padding-bottom: 60px; /* Platz für den Footer */
     }
     header {
-      background: #34495e;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       padding: 20px;
+      background: #34495e;
       color: #fff;
       text-align: center;
+      position: relative;
     }
-    nav a {
+    header img {
+      height: 75px;
+      margin-right: 15px;
+    }
+    header img.header-center {
+      height: 40px;
+    }
+    header h1.header-center {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      margin: 0;
+    }
+    nav.header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    nav.header-right a {
       color: #fff;
-      margin: 0 10px;
+      margin: 5px 0;
       text-decoration: none;
       font-weight: bold;
+    }
+    .separator {
+      width: 100%;
+      height: 1px;
+      background-color: #607d8b;
+      margin: 5px 0;
     }
     main {
       padding: 20px;
       text-align: center;
     }
+    /* Gemeinsame Box-Stile */
+    .box {
+      background: #fff;
+      padding: 20px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      text-align: left;
+    }
+    /* Container für Box 2 und Box 3 nebeneinander */
+    .box-container {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .box-container .box {
+      flex: 1;
+    }
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      line-height: 60px;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Multiplayer Mau Mau</h1>
-    <nav>
+    <!-- Logo ganz links -->
+    <img src="logo.png" alt="Logo">
+    <img class="header-center maumau" src="maumau.png" alt="MauMau Logo">
+    <!-- Navigation (Buttons/Links) ganz rechts -->
+    <nav class="header-right">
       <a href="/register">Account erstellen</a>
+      <div class="separator"></div>
       <a href="/login">Einloggen</a>
     </nav>
   </header>
   <main>
-    <p>Erstelle oder logge dich in einen Account ein, um zu starten!</p>
+    <!-- Box 1: Ganz oben -->
+    <div class="box">
+      <b>Willkommen auf maumau.fun!</b><br>
+      Schön, dass du hier bist – mach’s dir bequem und leg gleich los mit einer Runde MauMau!<br>
+      Auf maumau.fun spielst du MauMau kostenlos und ganz einfach online – aber mit einem kleinen Twist: Statt dem üblichen Skatblatt verwenden wir ein Bridgeblatt mit 52 Karten. So gibt’s mehr Karten im Spiel, was perfekt für größere Runden ist. Mehr Karten, mehr Spieler, mehr Spaß!
+    </div>
+    <!-- Box 2 und Box 3: Darunter nebeneinander -->
+    <div class="box-container">
+      <div class="box">
+        <b>Wie funktioniert MauMau?</b><br>
+        Spieler versucht, alle Karten so schnell wie möglich loszuwerden. Gespielt wird im Uhrzeigersinn, wobei du immer eine Karte ablegen darfst, die entweder die gleiche Zahl oder das gleiche Symbol (Herz, Karo, Pik, Kreuz) wie die oberste Karte auf dem Ablagestapel hat. Bestimmte Karten haben Spezialfunktionen: Die 8 zwingt den nächsten zum Aussetzen, die 7 zwingt zum Ziehen von zwei Karten, und ein Bube darf die Farbe wechseln. Wer nur noch eine Karte auf der Hand hat, muss „Mau“ ansagen – und beim Ablegen der letzten Karte „MauMau“. Vergisst man das, gibt’s Strafkarten!
+      </div>
+      <div class="box">
+        <b>Woher kommt MauMau eigentlich?</b><br>
+        Die Ursprünge von MauMau sind nicht ganz klar, aber das Spiel ist seit dem 20. Jahrhundert besonders im deutschsprachigen Raum beliebt. Es gehört zur großen Familie der Ablegespiele, zu der auch Uno zählt – welches wiederum eine kommerzielle Variante von MauMau ist. Viele Länder haben eigene Versionen mit kleinen Regelunterschieden, aber das Prinzip bleibt gleich: Schnell denken, clever spielen – und ein bisschen Glück haben.
+      </div>
+    </div>
   </main>
+  <footer>
+    <center>
+      Copyright 2025 Christopher Dornscheidt
+    </center>
+  </footer>
 </body>
 </html>

@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <title>Lobby Browser</title>
+  <!-- Font Awesome CSS (Versuch 1: FA6) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Falls das nicht funktioniert, kannst du stattdessen FA5 versuchen:
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  -->
   <script src="/socket.io/socket.io.js"></script>
   <style>
     body {
@@ -12,37 +17,32 @@
       padding: 0;
     }
     header {
-      background: #34495e;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       padding: 20px;
+      background: #34495e;
       color: #fff;
       text-align: center;
       position: relative;
     }
-    /* Spielername in Fett (oben links) */
-    #myName {
+    header img.logo {
+      height: 75px;
+      margin-right: 15px;
+    }
+    /* Überschrift zentriert (absolut positioniert) */
+    header h1.header-center {
       position: absolute;
-      left: 20px;
-      top: 20px;
-      font-size: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      margin: 0;
+    }
+    /* Navigation rechts */
+    nav.header-right a {
+      color: #fff;
+      margin: 0 10px;
+      text-decoration: none;
       font-weight: bold;
-    }
-    /* Elo-Anzeige */
-    #myElo {
-      position: absolute;
-      left: 20px;
-      top: 50px;
-      font-size: 18px;
-      color: #fff;
-    }
-    header button#logoutBtn {
-      position: absolute;
-      right: 20px;
-      top: 20px;
-      background: transparent;
-      border: none;
-      color: #fff;
-      font-size: 18px;
-      cursor: pointer;
     }
     main {
       max-width: 800px;
@@ -93,17 +93,93 @@
       cursor: pointer;
     }
     button:hover {
+      color: #6699CC;
+      background: #34495e;
+    }
+    /* Dropdown-Styles */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .dropbtn {
+      font-size: 20px;
+      font-weight: bold;
+      background: transparent;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+    .user-icon {
+      font-size: 20px;
+      margin-right: 5px;
+      color: #fff;
+      position: relative;
+      top: -3px;
+    }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: #34495e;
+      min-width: 160px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      padding: 12px 16px;
+      z-index: 1;
+    }
+    .dropdown.show .dropdown-content {
+      display: block;
+    }
+    .dropdown-content p {
+      margin: 0;
+      padding: 5px 0;
+      font-size: 12px;
+      color: #fff;
+    }
+	header img.header-center {
+      height: 40px;
+    }
+    .dropdown-content button {
+      width: 100%;
+      padding: 5px 10px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      text-align: left;
+      margin-top: 5px;
+    }
+    .dropdown-content button:hover {
+      color: #6699CC;
       background: #34495e;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Lobby Browser</h1>
-    <div id="myName"></div>
-    <div id="myElo"></div>
-    <button id="logoutBtn" title="Ausloggen">Ausloggen</button>
+    <!-- Logo ganz links -->
+    <img src="logo.png" alt="Logo" class="logo">
+	<img class="header-center maumau" src="maumau.png" alt="Logo">
+    <!-- Überschrift zentriert -->
+    <!--<h1 class="header-center">MauMau.fun</h1>-->
+    <!-- Navigation (Dropdown-Menü) ganz rechts -->
+    <nav class="header-right">
+      <div class="dropdown">
+        <button class="dropbtn" id="myName">
+          <!-- Versuche hier, falls FA6 nicht klappt, statt fa-solid fa-user "fas fa-user" zu verwenden -->
+          <i class="fa-solid fa-user user-icon"></i>
+          <span id="usernameText"></span>
+        </button>
+        <div class="dropdown-content">
+          <p id="myElo"></p>
+          <button id="logoutBtn" title="Ausloggen">Ausloggen</button>
+        </div>
+      </div>
+    </nav>
   </header>
+  
   <main>
     <form id="createLobbyForm">
       <input type="text" id="lobbyName" placeholder="Lobbynamen (max. 20 Zeichen)" maxlength="20" required>
@@ -121,8 +197,8 @@
         window.location.href = '/login';
       }
       
-      // Setze den Spielernamen im Header
-      document.getElementById('myName').textContent = username;
+      // Setze den Spielernamen im Dropdown-Button
+      document.getElementById('usernameText').textContent = username;
       
       // Hole eigene Elo
       socket.emit('getMyElo', { username: username });
@@ -130,13 +206,28 @@
         document.getElementById('myElo').textContent = "Dein Elo: " + data.elo;
       });
       
+      // Logout-Button im Dropdown
       document.getElementById('logoutBtn').addEventListener('click', () => {
-  // Entferne die gespeicherten Benutzerdaten aus localStorage
-  localStorage.removeItem('username');
-  localStorage.removeItem('lobbyId');
-  // Weiterleiten zur Logout-Route
-  window.location.href = '/logout?username=' + encodeURIComponent(username);
-});
+        localStorage.removeItem('username');
+        localStorage.removeItem('lobbyId');
+        window.location.href = '/logout?username=' + encodeURIComponent(username);
+      });
+      
+      // Dropdown-Toggle beim Klick auf den Dropbtn
+      document.querySelector('.dropbtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        this.parentElement.classList.toggle('show');
+      });
+      // Schließe das Dropdown, wenn außerhalb geklickt wird
+      window.addEventListener('click', function() {
+        const dropdowns = document.getElementsByClassName("dropdown");
+        for (let i = 0; i < dropdowns.length; i++) {
+          const openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+          }
+        }
+      });
       
       function requestLobbyList() {
         socket.emit('getLobbyList');
@@ -164,14 +255,12 @@
           li.innerHTML = `<strong>${lobby.name}</strong> (ID: ${lobby.id}) - Host: ${lobby.host} (ELO: ${lobby.playerElos[lobby.host]}) - Spieler: ${lobby.players.length}/${lobby.maxPlayers}`;
           if (!lobby.started) {
             if (lobby.host === username) {
-              // Button zum Rundenstart
               let startBtn = document.createElement('button');
               startBtn.textContent = 'Runde starten';
               startBtn.addEventListener('click', () => {
                 socket.emit('startRound', { lobbyId: lobby.id, username: username });
               });
               li.appendChild(startBtn);
-              // "x"-Button zum Schließen der eigenen Lobby
               let closeBtn = document.createElement('button');
               closeBtn.textContent = 'x';
               closeBtn.addEventListener('click', () => {
@@ -198,7 +287,6 @@
           openLobbyListElem.appendChild(li);
         });
         
-        // Für gestartete Lobbies, in denen der Spieler ist, zeigen wir einen "Zum Spiel"-Button an
         startedLobbies.forEach(lobby => {
           let li = document.createElement('li');
           li.classList.add('startedLobby');
