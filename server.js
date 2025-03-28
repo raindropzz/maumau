@@ -36,7 +36,6 @@ accounts = loadAccounts();
 let loggedInUsers = new Set();
 
 // --- Kartenspiel-Funktionen ---
-// Das Kartenset umfasst nun zusätzlich die Ränge "2" bis "6".
 function createDeck() {
   const suits = ["Kreuz", "Pik", "Herz", "Karo"];
   const ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Unter", "Ober", "König", "Ass"];
@@ -410,18 +409,19 @@ io.on('connection', socket => {
 });
 
 // Inaktivitätsprüfung: Alle 60 Sekunden (5 Minuten Inaktivität)
+// Schließt die Lobby komplett, wenn zu lange Inaktivität besteht.
 setInterval(() => {
   const now = Date.now();
-  lobbies.forEach(lobby => {
+  lobbies = lobbies.filter(lobby => {
     if (lobby.started && lobby.game) {
       if (now - lobby.game.lastInteraction > 300000) {
         io.to(lobby.id).emit('gameEnded', { winner: null, reason: 'Lobby geschlossen wegen Inaktivität' });
-        lobby.started = false;
-        lobby.game = null;
-        emitLobbyList();
+        return false; // Lobby entfernen
       }
     }
+    return true;
   });
+  emitLobbyList();
 }, 60000);
 
 const PORT = process.env.PORT || 3000;

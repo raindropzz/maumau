@@ -130,10 +130,13 @@
         document.getElementById('myElo').textContent = "Dein Elo: " + data.elo;
       });
       
-      // Logout
       document.getElementById('logoutBtn').addEventListener('click', () => {
-        window.location.href = '/logout?username=' + encodeURIComponent(username);
-      });
+  // Entferne die gespeicherten Benutzerdaten aus localStorage
+  localStorage.removeItem('username');
+  localStorage.removeItem('lobbyId');
+  // Weiterleiten zur Logout-Route
+  window.location.href = '/logout?username=' + encodeURIComponent(username);
+});
       
       function requestLobbyList() {
         socket.emit('getLobbyList');
