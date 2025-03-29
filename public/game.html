@@ -229,6 +229,21 @@
       justify-content: center;
       gap: 2px;
     }
+	.suit-button {
+	  background: transparent !important;
+	  border: none !important;
+	  -webkit-appearance: none;
+	  appearance: none;
+	  font-size: 32px;
+	  cursor: pointer;
+	  padding: 10px;
+	  transition: transform 0.2s ease;
+	  outline: none;
+	}
+	.suit-button:hover {
+	  transform: scale(1.2);
+	}
+
 </style>
 
 </head>
@@ -258,7 +273,7 @@
     <div id="gameInterface" style="display:none;">
       <div class="status">
         <h2>Am Zug: <span id="currentTurn"></span></h2>
-        <p>Gewünschtes Symbol: <span id="activeSuit"></span></p>
+        <b><span id="activeSuit"></span></b>
         <div id="cardArea">
           <div id="deckContainer" class="card deck"></div>
           <div id="discardPileContainer" class="card"></div>
@@ -384,7 +399,7 @@
         if (sfxEnabled) {
           this.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
         } else {
-          this.innerHTML = '<i class="fa-solid fa-volume-mute"></i>';
+          this.innerHTML = '<i class="fa-solid fa-volume-mute" style="opacity:0.5;"></i>';
         }
       });
 
@@ -445,8 +460,12 @@
             activeSuitElem.classList.remove('red');
           }
         } else {
-          document.getElementById('activeSuit').textContent = '-';
+          document.getElementById('activeSuit').textContent = '';
         }
+		
+		if(document.getElementById('activeSuit').textContent != ''){
+			document.getElementById('activeSuit').textContent = 'Gewünschtes Symbol: ' + document.getElementById('activeSuit').textContent;
+		}
 
         const deckContainer = document.getElementById('deckContainer');
         deckContainer.textContent = game.deck.length;
@@ -562,27 +581,40 @@
         document.getElementById('suitSelection').innerHTML = '';
       }
 
-      function showSuitSelection(card) {
-        const suitSelectionDiv = document.getElementById('suitSelection');
-        suitSelectionDiv.innerHTML = '';
-        const suits = ["Kreuz", "Pik", "Herz", "Karo"];
-        suits.forEach(suit => {
-          const btn = document.createElement('button');
-          btn.textContent = getSuitSymbol(suit) + ' ' + suit;
-          if(suit === "Herz" || suit === "Karo") {
-            btn.classList.add('red');
-          }
-          btn.addEventListener('click', () => {
-            if(sfxEnabled) {
-              sfxCardPlay.currentTime = 0;
-              sfxCardPlay.play();
-            }
-            socket.emit('playCard', { lobbyId: lobbyId, username: username, card: card, chosenSuit: suit });
-            suitSelectionDiv.innerHTML = '';
-          });
-          suitSelectionDiv.appendChild(btn);
-        });
-      }
+	function showSuitSelection(card) {
+	  const suitSelectionDiv = document.getElementById('suitSelection');
+	  suitSelectionDiv.innerHTML = '';
+	  
+	  // Füge den Titel hinzu
+	  const title = document.createElement('div');
+	  title.textContent = "Wähle ein Symbol:";
+	  title.style.fontSize = "18px";
+	  title.style.marginBottom = "10px";
+	  suitSelectionDiv.appendChild(title);
+	  
+	  const suits = ["Kreuz", "Pik", "Herz", "Karo"];
+	  suits.forEach(suit => {
+		const btn = document.createElement('button');
+		// Zeige nur das jeweilige Symbol
+		btn.innerHTML = getSuitSymbol(suit);
+		btn.classList.add('suit-button');
+		// Setze die passende Farbe: rot für Herz/Karo, schwarz sonst
+		btn.style.color = (suit === "Herz" || suit === "Karo") ? "red" : "black";
+		btn.addEventListener('click', () => {
+		  if (sfxEnabled) {
+			sfxCardPlay.currentTime = 0;
+			sfxCardPlay.play();
+		  }
+		  socket.emit('playCard', { lobbyId: lobbyId, username: username, card: card, chosenSuit: suit });
+		  suitSelectionDiv.innerHTML = '';
+		});
+		suitSelectionDiv.appendChild(btn);
+	  });
+	}
+
+
+
+
 
       function playCard(card) {
         if(card.rank === "Unter") {
