@@ -308,6 +308,10 @@ io.on('connection', socket => {
         game.penaltyCount = 2;
       }
     }
+	if(game.penaltyCount === 0){
+		//game.drawnAfterPenalty = false;
+		game.drawnAfterPenalty[data.username] = false;
+	}
     const playedCard = playerHand.splice(cardIndex, 1)[0];
     game.discardPile.push(playedCard);
     game.activeSuit = null;
@@ -426,5 +430,5 @@ setInterval(() => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server läuft auf Port ${PORT}`);
+  console.log(`MauMau.fun Server läuft auf Port ${PORT}`);
 });

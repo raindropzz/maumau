@@ -18,22 +18,20 @@
       padding: 20px;
       background: #34495e;
       color: #fff;
-      text-align: center;
       position: relative;
     }
-    header img {
+    /* Logo ganz links */
+    header img.logo {
       height: 75px;
-      margin-right: 15px;
     }
-    header img.header-center {
-      height: 40px;
-    }
-    header h1.header-center {
+    /* Zentriere das maumau.png Bild absolut */
+    header img.maumau {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      margin: 0;
+      height: 40px;
     }
+    /* Navigation (Buttons/Links) ganz rechts */
     nav.header-right {
       display: flex;
       flex-direction: column;
@@ -90,8 +88,9 @@
 <body>
   <header>
     <!-- Logo ganz links -->
-    <img src="logo.png" alt="Logo">
-    <img class="header-center maumau" src="maumau.png" alt="MauMau Logo">
+    <img class="logo" src="logo.png" alt="Logo">
+    <!-- maumau.png Bild, immer zentriert -->
+    <img class="maumau" src="maumau.png" alt="MauMau Logo">
     <!-- Navigation (Buttons/Links) ganz rechts -->
     <nav class="header-right">
       <a href="/register">Account erstellen</a>
@@ -104,7 +103,7 @@
     <div class="box">
       <b>Willkommen auf maumau.fun!</b><br>
       Schön, dass du hier bist – mach’s dir bequem und leg gleich los mit einer Runde MauMau!<br>
-      Auf maumau.fun spielst du MauMau kostenlos und ganz einfach online – aber mit einem kleinen Twist: Statt dem üblichen Skatblatt verwenden wir ein Bridgeblatt mit 52 Karten. So gibt’s mehr Karten im Spiel, was perfekt für größere Runden ist. Mehr Karten, mehr Spieler, mehr Spaß! Erstelle dir jetzt einen Account oder Log dich ein und lass die Spiele beginnen!
+      Auf maumau.fun spielst du MauMau kostenlos und ganz einfach online – aber mit einem kleinen Twist: Statt dem üblichen Skatblatt verwenden wir ein Bridgeblatt mit 52 Karten. So gibt’s mehr Karten im Spiel, was perfekt für größere Runden ist. Mehr Karten, mehr Spieler, mehr Spaß! Erstelle dir jetzt einen Account oder log dich ein und lass die Spiele beginnen!
     </div>
     <!-- Box 2 und Box 3: Darunter nebeneinander -->
     <div class="box-container">

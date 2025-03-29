@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>Mau Mau Spiel</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="/socket.io/socket.io.js"></script>
-  <style>
+<style>
     body {
       font-family: Arial, sans-serif;
       background: #ecf0f1;
@@ -12,10 +14,40 @@
       padding: 0;
     }
     header {
-      background: #34495e;
+      position: relative;
       padding: 20px;
+      background: #34495e;
       color: #fff;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    /* Logo links */
+    header img.logo {
+      height: 75px;
+    }
+    /* Zentriertes Bild (maumau.png) */
+    header img.maumau {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 40px;
+    }
+    /* Sound-Control im Header (optional, falls benötigt) */
+    #soundControls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #soundControls button {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    #soundControls input[type="range"] {
+      width: 80px;
     }
     main {
       max-width: 1000px;
@@ -28,7 +60,7 @@
       text-align: center;
       margin-bottom: 20px;
     }
-    /* Karten (vergrößert) */
+    /* Karten */
     .card {
       display: inline-block;
       border: 1px solid #2c3e50;
@@ -42,6 +74,12 @@
       background: #fff;
       box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
       cursor: pointer;
+      transition: transform 0.2s ease, border 0.2s ease;
+    }
+    /* Hover-Effekt nur für Karten in der Hand */
+    .card.hand:hover {
+      transform: scale(1.1);
+      border: 2px solid red;
     }
     .deck {
       background: #bdc3c7;
@@ -139,7 +177,7 @@
       height: 8px;
       background: radial-gradient(circle, #fff, transparent);
       border-radius: 50%;
-      animation: explode 1s ease-out forwards;
+      animation: explode 5s ease-out forwards;
     }
     @keyframes explode {
       0% {
@@ -151,7 +189,7 @@
         transform: translate(var(--tx), var(--ty)) scale(1.5);
       }
     }
-    /* Scoreboard - Anzeige der Handkarten als kleine Karten */
+    /* Scoreboard */
     #scoreboard {
       text-align: center;
       margin-top: 10px;
@@ -169,8 +207,8 @@
     .handCard {
       border: 1px solid #2c3e50;
       border-radius: 5px;
-      width: 26.67px; /* 1/3 der Breite von .card (80px) */
-      height: 40px;   /* 1/3 der Höhe von .card (120px) */
+      width: 26.67px;
+      height: 40px;
       line-height: 40px;
       text-align: center;
       font-size: 10px;
@@ -178,16 +216,48 @@
       box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
       margin: 0 auto;
     }
-  </style>
+    /* Neue Styles für die Miniaturansichten der Karten der anderen Spieler */
+    .card.small {
+      width: 26.67px !important;
+      height: 40px !important;
+      font-size: 10px;
+      line-height: 40px;
+      margin: 2px;
+    }
+    .handCardsContainer {
+      display: flex;
+      justify-content: center;
+      gap: 2px;
+    }
+</style>
+
 </head>
 <body>
   <header>
-    <h1>Mau Mau</h1>
+    <img src="logo.png" alt="Logo" class="logo">
+    <img src="maumau.png" alt="MauMau Logo" class="maumau">
+    <div id="soundControls">
+      <button id="toggleBgMusic" title="Hintergrundmusik umschalten"><i class="fa-solid fa-music"></i></button>
+      <input type="range" id="bgMusicVolume" min="0" max="1" step="0.01" value="1">
+      <button id="toggleSfx" title="Soundeffekte umschalten"><i class="fa-solid fa-volume-high"></i></button>
+      <input type="range" id="sfxVolume" min="0" max="1" step="0.01" value="1">
+    </div>
   </header>
+  
+  <!-- Audio-Elemente -->
+  <audio id="bgMusic" src="bg_music.mp3" loop></audio>
+  <audio id="sfxCardDraw" src="card_draw.mp3"></audio>
+  <audio id="sfxCardPlay" src="card_play.mp3"></audio>
+  <audio id="sfxWin" src="win.mp3"></audio>
+  <audio id="sfxLose" src="lose.mp3"></audio>
+  <audio id="sfxShuffle" src="card_shuffle.mp3"></audio>
+  <audio id="sfxTurn" src="turn.mp3"></audio>
+  <audio id="sfxHover" src="hover.mp3"></audio>
+  
   <main>
     <div id="gameInterface" style="display:none;">
       <div class="status">
-        <h2><p>Am Zug: <span id="currentTurn"></span></p></h2>
+        <h2>Am Zug: <span id="currentTurn"></span></h2>
         <p>Gewünschtes Symbol: <span id="activeSuit"></span></p>
         <div id="cardArea">
           <div id="deckContainer" class="card deck"></div>
@@ -206,246 +276,423 @@
     </div>
     <div id="winningScreen"></div>
     <script>
-      document.addEventListener("DOMContentLoaded", function() {
-        try {
-          console.log("game.html geladen");
-          const socket = io();
-      
-          // Lese username und lobbyId aus localStorage
-          let username = localStorage.getItem('username') || "";
-          let lobbyId = localStorage.getItem('lobbyId') || "";
-          console.log("username:", username, "lobbyId:", lobbyId);
-          if (!username || !lobbyId) {
-            console.error("username oder lobbyId fehlen!");
-            document.body.innerHTML = "<h2>Fehler: Keine Lobby gefunden. Bitte kehre zum Lobbybrowser zurück.</h2>";
-            return;
-          }
-      
-          function getSuitSymbol(suit) {
-            switch(suit) {
-              case "Kreuz": return "♣";
-              case "Pik": return "♠";
-              case "Herz": return "♥";
-              case "Karo": return "♦";
-              default: return suit;
-            }
-          }
-      
-          function getDisplayRank(rank) {
-            switch(rank) {
-              case "König": return "K";
-              case "Unter": return "B";
-              case "Ober": return "D";
-              case "Ass": return "A";
-              default: return rank;
-            }
-          }
-      
-          function showMessage(msg) {
-            const box = document.getElementById('messageBox');
-            box.textContent = msg;
-            box.style.display = 'block';
-            setTimeout(() => { box.style.display = 'none'; }, 3000);
-          }
-      
-          function updateGameInterface(game) {
-            document.getElementById('currentTurn').textContent = game.turnOrder[game.currentTurnIndex];
-            
-            // Anzeige des activeSuit mit Symbol und Farbe
-            if(game.activeSuit) {
-              const activeSuitElem = document.getElementById('activeSuit');
-              activeSuitElem.textContent = getSuitSymbol(game.activeSuit) + ' ' + game.activeSuit;
-              if(game.activeSuit === "Herz" || game.activeSuit === "Karo") {
-                activeSuitElem.classList.add('red');
-              } else {
-                activeSuitElem.classList.remove('red');
-              }
-            } else {
-              document.getElementById('activeSuit').textContent = '-';
-            }
-      
-            const deckContainer = document.getElementById('deckContainer');
-            deckContainer.textContent = game.deck.length;
-      
-            const topCard = game.discardPile[game.discardPile.length - 1];
-            const discardPileContainer = document.getElementById('discardPileContainer');
-            if(topCard) {
-              discardPileContainer.textContent = getSuitSymbol(topCard.suit) + ' ' + getDisplayRank(topCard.rank);
-              if(topCard.suit === "Herz" || topCard.suit === "Karo") {
-                discardPileContainer.classList.add('red');
-              } else {
-                discardPileContainer.classList.remove('red');
-              }
-            }
-      
-            if(game.turnOrder[game.currentTurnIndex] === username) {
-              const drawBtn = document.getElementById('drawCardBtn');
-              const endTurnBtn = document.getElementById('endTurnBtn');
-              if(game.penaltyCount > 0) {
-                drawBtn.textContent = game.penaltyCount + " Karten ziehen";
-                drawBtn.style.display = 'inline-block';
-                endTurnBtn.style.display = 'none';
-              } else {
-                if(game.drawnAfterPenalty && game.drawnAfterPenalty[username] === true) {
-                  drawBtn.style.display = 'none';
-                  endTurnBtn.textContent = "Passen";
-                  endTurnBtn.style.display = 'inline-block';
-                } else {
-                  drawBtn.textContent = "Karte ziehen";
-                  drawBtn.style.display = 'inline-block';
-                  endTurnBtn.style.display = 'none';
-                }
-              }
-            } else {
-              document.getElementById('drawCardBtn').style.display = 'none';
-              document.getElementById('endTurnBtn').style.display = 'none';
-            }
-      
-            // Anzeige der Handkarten der Spieler als kleine Karten (Name über der Karte, Anzahl in der Karte)
-            const scoreboardDiv = document.getElementById('scoreboard');
-            scoreboardDiv.innerHTML = '';
-            game.turnOrder.forEach(player => {
-              let count = (game.hands[player] && game.hands[player].length) || 0;
-              const handDisplay = document.createElement('div');
-              handDisplay.className = 'handDisplay';
-              
-              const nameDiv = document.createElement('div');
-              nameDiv.className = 'handPlayerName';
-              nameDiv.textContent = player;
-              
-              const handCardDiv = document.createElement('div');
-              handCardDiv.className = 'handCard';
-              handCardDiv.textContent = count;
-              
-              handDisplay.appendChild(nameDiv);
-              handDisplay.appendChild(handCardDiv);
-              scoreboardDiv.appendChild(handDisplay);
-            });
-      
-            const handDiv = document.getElementById('hand');
-            handDiv.innerHTML = '';
-            if(game.hands[username]) {
-              game.hands[username].forEach((card) => {
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'card';
-                if(card.suit === "Herz" || card.suit === "Karo") {
-                  cardDiv.classList.add('red');
-                }
-                cardDiv.textContent = getSuitSymbol(card.suit) + ' ' + getDisplayRank(card.rank);
-                cardDiv.addEventListener('click', () => {
-                  playCard(card);
-                });
-                handDiv.appendChild(cardDiv);
-              });
-            } else {
-              handDiv.textContent = 'Keine Karten in der Hand.';
-            }
-      
-            document.getElementById('suitSelection').innerHTML = '';
-          }
-      
-          function showSuitSelection(card) {
-            const suitSelectionDiv = document.getElementById('suitSelection');
-            suitSelectionDiv.innerHTML = '';
-            const suits = ["Kreuz", "Pik", "Herz", "Karo"];
-            suits.forEach(suit => {
-              const btn = document.createElement('button');
-              btn.textContent = getSuitSymbol(suit) + ' ' + suit;
-              // Setze die passende Farbe für den Knopf
-              if(suit === "Herz" || suit === "Karo") {
-                btn.classList.add('red');
-              }
-              btn.addEventListener('click', () => {
-                socket.emit('playCard', { lobbyId: lobbyId, username: username, card: card, chosenSuit: suit });
-                suitSelectionDiv.innerHTML = '';
-              });
-              suitSelectionDiv.appendChild(btn);
-            });
-          }
-      
-          function playCard(card) {
-            if(card.rank === "Unter") {
-              showSuitSelection(card);
-              return;
-            }
-            socket.emit('playCard', { lobbyId: lobbyId, username: username, card: card, chosenSuit: null });
-          }
-      
-          socket.on('gameState', (game) => {
-            console.log("gameState empfangen:", game);
-            updateGameInterface(game);
-            document.getElementById('gameInterface').style.display = 'block';
-          });
-      
-          socket.on('errorMessage', (msg) => {
-            showMessage(msg);
-            if(msg === "Lobby oder Spiel nicht gefunden." || msg === "Spiel wurde noch nicht gestartet.") {
-              setTimeout(() => {
-                window.location.href = '/lobby';
-              }, 3000);
-            }
-          });
-      
-          socket.on('gameEnded', (data) => {
-            document.getElementById('gameInterface').style.display = 'none';
-            const winningScreen = document.getElementById('winningScreen');
-            if(data.winner) {
-              winningScreen.textContent = "Spiel beendet! Gewinner: " + data.winner;
-              winningScreen.style.background = "#2ecc71";
-            } else if(data.reason) {
-              winningScreen.textContent = data.reason;
-              winningScreen.style.background = "red";
-            }
-            const fireworksDiv = document.createElement('div');
-            fireworksDiv.id = "fireworks";
-            for (let i = 0; i < 8; i++) {
-              const fw = document.createElement('div');
-              fw.classList.add('firework');
-              const angle = Math.random() * 360;
-              const distance = Math.random() * 100 + 50;
-              const tx = Math.cos(angle * Math.PI / 180) * distance + "px";
-              const ty = Math.sin(angle * Math.PI / 180) * distance + "px";
-              fw.style.setProperty('--tx', tx);
-              fw.style.setProperty('--ty', ty);
-              fw.style.left = Math.random() * 100 + "%";
-              fw.style.top = Math.random() * 100 + "%";
-              const colors = ["red", "yellow", "blue", "green", "orange", "purple"];
-              fw.style.background = colors[Math.floor(Math.random() * colors.length)];
-              fireworksDiv.appendChild(fw);
-            }
-            winningScreen.appendChild(fireworksDiv);
-            const backBtn = document.createElement('button');
-            backBtn.textContent = "Zurück zum Lobbybrowser";
-            backBtn.addEventListener('click', () => {
-              window.location.href = '/lobby';
-            });
-            winningScreen.appendChild(document.createElement('br'));
-            winningScreen.appendChild(backBtn);
-            winningScreen.style.display = 'block';
-            // Verlängere die Anzeigezeit der Animation
-            setTimeout(() => {
-              window.location.href = '/lobby';
-            }, 5000);
-          });
-      
-          document.getElementById('drawCardBtn').addEventListener('click', () => {
-            socket.emit('drawCard', { lobbyId: lobbyId, username: username });
-          });
-      
-          document.getElementById('endTurnBtn').addEventListener('click', () => {
-            socket.emit('endTurn', { lobbyId: lobbyId, username: username });
-          });
-      
-          // Sende joinGame-Event, um den aktuellen Spielzustand zu laden
-          setTimeout(() => {
-            socket.emit('joinGame', { username: username, lobbyId: lobbyId });
-          }, 500);
-        } catch (e) {
-          console.error("Fehler beim Initialisieren der Spielseite:", e);
-          document.body.innerHTML = "<h2>Ein Fehler ist aufgetreten. Bitte lade die Seite neu.</h2>";
+  document.addEventListener("DOMContentLoaded", function() {
+    // Hilfsfunktionen zum Setzen und Abrufen von Cookies
+    function setCookie(name, value, days) {
+      let expires = "";
+      if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+      }
+      document.cookie = name + "=" + (value || "") + expires + "; path=/";
+    }
+
+    function getCookie(name) {
+      const nameEQ = name + "=";
+      const ca = document.cookie.split(';');
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+      }
+      return null;
+    }
+
+    try {
+      console.log("game.html geladen");
+      const socket = io();
+
+      // Lese username und lobbyId aus localStorage
+      let username = localStorage.getItem('username') || "";
+      let lobbyId = localStorage.getItem('lobbyId') || "";
+      console.log("username:", username, "lobbyId:", lobbyId);
+      if (!username || !lobbyId) {
+        console.error("username oder lobbyId fehlen!");
+        document.body.innerHTML = "<h2>Fehler: Keine Lobby gefunden. Bitte kehre zum Lobbybrowser zurück.</h2>";
+        return;
+      }
+
+      // Sound-Steuerung: Standardwerte
+      let bgMusicEnabled = true;
+      let sfxEnabled = true;
+
+      const bgMusic = document.getElementById('bgMusic');
+      const sfxCardDraw = document.getElementById('sfxCardDraw');
+      const sfxCardPlay = document.getElementById('sfxCardPlay');
+      const sfxWin = document.getElementById('sfxWin');
+      const sfxLose = document.getElementById('sfxLose');
+      const sfxShuffle = document.getElementById('sfxShuffle');
+      const sfxTurn = document.getElementById('sfxTurn');
+      const sfxHover = document.getElementById('sfxHover');
+
+      // Lade gespeicherte Einstellungen aus Cookies (falls vorhanden)
+      const bgMusicEnabledCookie = getCookie("bgMusicEnabled");
+      if (bgMusicEnabledCookie !== null) {
+        bgMusicEnabled = (bgMusicEnabledCookie === "true");
+      }
+      const sfxEnabledCookie = getCookie("sfxEnabled");
+      if (sfxEnabledCookie !== null) {
+        sfxEnabled = (sfxEnabledCookie === "true");
+      }
+      const bgMusicVolumeCookie = getCookie("bgMusicVolume");
+      if (bgMusicVolumeCookie !== null) {
+        bgMusic.volume = parseFloat(bgMusicVolumeCookie);
+        document.getElementById('bgMusicVolume').value = bgMusicVolumeCookie;
+      }
+      const sfxVolumeCookie = getCookie("sfxVolume");
+      if (sfxVolumeCookie !== null) {
+        const vol = parseFloat(sfxVolumeCookie);
+        sfxCardDraw.volume = vol;
+        sfxCardPlay.volume = vol;
+        sfxWin.volume = vol;
+        sfxLose.volume = vol;
+        sfxShuffle.volume = vol;
+        sfxTurn.volume = vol;
+        document.getElementById('sfxVolume').value = sfxVolumeCookie;
+      }
+
+      // Passe die UI-Elemente der Toggle-Buttons an
+      if (!bgMusicEnabled) {
+        document.getElementById('toggleBgMusic').innerHTML = '<i class="fa-solid fa-music" style="opacity:0.5;"></i>';
+        bgMusic.pause();
+      }
+      if (!sfxEnabled) {
+        document.getElementById('toggleSfx').innerHTML = '<i class="fa-solid fa-volume-mute"></i>';
+      }
+
+      // Hintergrundmusik starten, falls aktiviert
+      if (bgMusicEnabled) {
+        bgMusic.play().catch(err => console.warn("Autoplay Fehler:", err));
+      }
+
+      // Toggle-Buttons
+      document.getElementById('toggleBgMusic').addEventListener('click', function() {
+        bgMusicEnabled = !bgMusicEnabled;
+        setCookie("bgMusicEnabled", bgMusicEnabled, 365);
+        if (bgMusicEnabled) {
+          bgMusic.play();
+          this.innerHTML = '<i class="fa-solid fa-music"></i>';
+        } else {
+          bgMusic.pause();
+          this.innerHTML = '<i class="fa-solid fa-music" style="opacity:0.5;"></i>';
         }
       });
-    </script>
+      document.getElementById('toggleSfx').addEventListener('click', function() {
+        sfxEnabled = !sfxEnabled;
+        setCookie("sfxEnabled", sfxEnabled, 365);
+        if (sfxEnabled) {
+          this.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+        } else {
+          this.innerHTML = '<i class="fa-solid fa-volume-mute"></i>';
+        }
+      });
+
+      // Volume-Regler
+      document.getElementById('bgMusicVolume').addEventListener('input', function() {
+        bgMusic.volume = this.value;
+        setCookie("bgMusicVolume", this.value, 365);
+      });
+      document.getElementById('sfxVolume').addEventListener('input', function() {
+        const vol = this.value;
+        sfxCardDraw.volume = vol;
+        sfxCardPlay.volume = vol;
+        sfxWin.volume = vol;
+        sfxLose.volume = vol;
+        sfxShuffle.volume = vol;
+        sfxTurn.volume = vol;
+        setCookie("sfxVolume", vol, 365);
+      });
+
+      function getSuitSymbol(suit) {
+        switch(suit) {
+          case "Kreuz": return "♣";
+          case "Pik": return "♠";
+          case "Herz": return "♥";
+          case "Karo": return "♦";
+          default: return suit;
+        }
+      }
+
+      function getDisplayRank(rank) {
+        switch(rank) {
+          case "König": return "K";
+          case "Unter": return "B";
+          case "Ober": return "D";
+          case "Ass": return "A";
+          default: return rank;
+        }
+      }
+
+      function showMessage(msg) {
+        const box = document.getElementById('messageBox');
+        box.textContent = msg;
+        box.style.display = 'block';
+        setTimeout(() => { box.style.display = 'none'; }, 3000);
+      }
+
+      // Variable zum Speichern des vorherigen Spielzugs (um TurnSound nur einmal zu spielen)
+      let prevTurn = "";
+
+      function updateGameInterface(game) {
+        document.getElementById('currentTurn').textContent = game.turnOrder[game.currentTurnIndex];
+        if (game.activeSuit) {
+          const activeSuitElem = document.getElementById('activeSuit');
+          activeSuitElem.textContent = getSuitSymbol(game.activeSuit) + ' ' + game.activeSuit;
+          if (game.activeSuit === "Herz" || game.activeSuit === "Karo") {
+            activeSuitElem.classList.add('red');
+          } else {
+            activeSuitElem.classList.remove('red');
+          }
+        } else {
+          document.getElementById('activeSuit').textContent = '-';
+        }
+
+        const deckContainer = document.getElementById('deckContainer');
+        deckContainer.textContent = game.deck.length;
+
+        const topCard = game.discardPile[game.discardPile.length - 1];
+        const discardPileContainer = document.getElementById('discardPileContainer');
+        if (topCard) {
+          discardPileContainer.textContent = getSuitSymbol(topCard.suit) + ' ' + getDisplayRank(topCard.rank);
+          if (topCard.suit === "Herz" || topCard.suit === "Karo") {
+            discardPileContainer.classList.add('red');
+          } else {
+            discardPileContainer.classList.remove('red');
+          }
+        }
+
+        // Spiele Turn-Sound, wenn es an mir ist und sich der Zug geändert hat
+        if (game.turnOrder[game.currentTurnIndex] === username && prevTurn !== username) {
+          if (sfxEnabled) {
+            sfxTurn.currentTime = 0;
+            sfxTurn.play();
+          }
+        }
+        prevTurn = game.turnOrder[game.currentTurnIndex];
+
+        if (game.turnOrder[game.currentTurnIndex] === username) {
+          const drawBtn = document.getElementById('drawCardBtn');
+          const endTurnBtn = document.getElementById('endTurnBtn');
+          if (game.penaltyCount > 0) {
+            drawBtn.textContent = game.penaltyCount + " Karten ziehen";
+            drawBtn.style.display = 'inline-block';
+            endTurnBtn.style.display = 'none';
+          } else {
+            if (game.drawnAfterPenalty && game.drawnAfterPenalty[username] === true) {
+              drawBtn.style.display = 'none';
+              endTurnBtn.textContent = "Passen";
+              endTurnBtn.style.display = 'inline-block';
+            } else {
+              drawBtn.textContent = "Karte ziehen";
+              drawBtn.style.display = 'inline-block';
+              endTurnBtn.style.display = 'none';
+            }
+          }
+        } else {
+          document.getElementById('drawCardBtn').style.display = 'none';
+          document.getElementById('endTurnBtn').style.display = 'none';
+        }
+
+        // Scoreboard aktualisieren: Für die anderen Spieler werden der Name und
+        // die Karten als Miniaturansichten (1/3 der Größe) angezeigt.
+        const scoreboardDiv = document.getElementById('scoreboard');
+        scoreboardDiv.innerHTML = '';
+        game.turnOrder.forEach(player => {
+          if (player !== username && game.hands[player]) {
+            const handDisplay = document.createElement('div');
+            handDisplay.className = 'handDisplay';
+
+            // Namen des Spielers über den Karten anzeigen
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'handPlayerName';
+            nameDiv.textContent = player;
+            handDisplay.appendChild(nameDiv);
+
+            const handCardsContainer = document.createElement('div');
+            handCardsContainer.className = 'handCardsContainer';
+
+            game.hands[player].forEach(card => {
+              const cardDiv = document.createElement('div');
+              // Mit der Klasse "small" (per CSS auf 1/3 der Größe eingestellt)
+              cardDiv.classList.add('card', 'small');
+              // Hintergrundfarbe grau, da verdeckt
+              cardDiv.style.backgroundColor = "gray";
+              cardDiv.textContent = ""; // Inhalte werden nicht angezeigt
+
+              // Aktiver Spieler erhält einen roten Rahmen
+              if (player === game.turnOrder[game.currentTurnIndex]) {
+                cardDiv.style.border = "2px solid red";
+              }
+              handCardsContainer.appendChild(cardDiv);
+            });
+
+            handDisplay.appendChild(handCardsContainer);
+            scoreboardDiv.appendChild(handDisplay);
+          }
+        });
+
+        // Eigene Handkarten separat anzeigen
+        const handDiv = document.getElementById('hand');
+        handDiv.innerHTML = '';
+        if (game.hands[username]) {
+          game.hands[username].forEach((card) => {
+            const cardDiv = document.createElement('div');
+            cardDiv.classList.add('card', 'hand');
+            if (card.suit === "Herz" || card.suit === "Karo") {
+              cardDiv.classList.add('red');
+            }
+            cardDiv.textContent = getSuitSymbol(card.suit) + ' ' + getDisplayRank(card.rank);
+            // Spiele Hover Sound
+            cardDiv.addEventListener('mouseenter', () => {
+              if(sfxEnabled) {
+                sfxHover.currentTime = 0;
+                sfxHover.play();
+              }
+            });
+            cardDiv.addEventListener('click', () => {
+              playCard(card);
+            });
+            handDiv.appendChild(cardDiv);
+          });
+        } else {
+          handDiv.textContent = 'Keine Karten in der Hand.';
+        }
+
+        document.getElementById('suitSelection').innerHTML = '';
+      }
+
+      function showSuitSelection(card) {
+        const suitSelectionDiv = document.getElementById('suitSelection');
+        suitSelectionDiv.innerHTML = '';
+        const suits = ["Kreuz", "Pik", "Herz", "Karo"];
+        suits.forEach(suit => {
+          const btn = document.createElement('button');
+          btn.textContent = getSuitSymbol(suit) + ' ' + suit;
+          if(suit === "Herz" || suit === "Karo") {
+            btn.classList.add('red');
+          }
+          btn.addEventListener('click', () => {
+            if(sfxEnabled) {
+              sfxCardPlay.currentTime = 0;
+              sfxCardPlay.play();
+            }
+            socket.emit('playCard', { lobbyId: lobbyId, username: username, card: card, chosenSuit: suit });
+            suitSelectionDiv.innerHTML = '';
+          });
+          suitSelectionDiv.appendChild(btn);
+        });
+      }
+
+      function playCard(card) {
+        if(card.rank === "Unter") {
+          showSuitSelection(card);
+          return;
+        }
+        if(sfxEnabled) {
+          sfxCardPlay.currentTime = 0;
+          sfxCardPlay.play();
+        }
+        socket.emit('playCard', { lobbyId: lobbyId, username: username, card: card, chosenSuit: null });
+      }
+
+      socket.on('gameState', (game) => {
+        console.log("gameState empfangen:", game);
+        updateGameInterface(game);
+        document.getElementById('gameInterface').style.display = 'block';
+      });
+
+      socket.on('errorMessage', (msg) => {
+        showMessage(msg);
+        if(msg === "Lobby oder Spiel nicht gefunden." || msg === "Spiel wurde noch nicht gestartet.") {
+          setTimeout(() => {
+            window.location.href = '/lobby';
+          }, 3000);
+        }
+      });
+
+      socket.on('gameEnded', (data) => {
+        document.getElementById('gameInterface').style.display = 'none';
+        const winningScreen = document.getElementById('winningScreen');
+        if(data.winner) {
+          winningScreen.textContent = "Glückwunsch wir haben einen Gewinner: " + data.winner;
+          winningScreen.style.background = "#34495e";
+          if(data.winner === username && sfxEnabled) {
+            sfxWin.currentTime = 0;
+            sfxWin.play();
+          } else if(sfxEnabled) {
+            sfxLose.currentTime = 0;
+            sfxLose.play();
+          }
+        } else if(data.reason) {
+          winningScreen.textContent = data.reason;
+          winningScreen.style.background = "red";
+          if(sfxEnabled) {
+            sfxLose.currentTime = 0;
+            sfxLose.play();
+          }
+        }
+        const fireworksDiv = document.createElement('div');
+        fireworksDiv.id = "fireworks";
+        for (let i = 0; i < 64; i++) {
+          const fw = document.createElement('div');
+          fw.classList.add('firework');
+          const angle = Math.random() * 360;
+          const distance = Math.random() * 100 + 50;
+          const tx = Math.cos(angle * Math.PI / 180) * distance + "px";
+          const ty = Math.sin(angle * Math.PI / 180) * distance + "px";
+          fw.style.setProperty('--tx', tx);
+          fw.style.setProperty('--ty', ty);
+          fw.style.left = Math.random() * 100 + "%";
+          fw.style.top = Math.random() * 100 + "%";
+          const colors = ["red", "yellow", "blue", "green", "orange", "purple"];
+          fw.style.background = colors[Math.floor(Math.random() * colors.length)];
+          fireworksDiv.appendChild(fw);
+        }
+        winningScreen.appendChild(fireworksDiv);
+        const backBtn = document.createElement('button');
+        backBtn.textContent = "Zurück zum Lobbybrowser";
+        backBtn.addEventListener('click', () => {
+          window.location.href = '/lobby';
+        });
+        winningScreen.appendChild(document.createElement('br'));
+        winningScreen.appendChild(backBtn);
+        winningScreen.style.display = 'block';
+        setTimeout(() => {
+          window.location.href = '/lobby';
+        }, 30000);
+      });
+
+      document.getElementById('drawCardBtn').addEventListener('click', () => {
+        if(sfxEnabled) {
+          sfxCardDraw.currentTime = 0;
+          sfxCardDraw.play();
+        }
+        socket.emit('drawCard', { lobbyId: lobbyId, username: username });
+      });
+
+      document.getElementById('endTurnBtn').addEventListener('click', () => {
+        socket.emit('endTurn', { lobbyId: lobbyId, username: username });
+      });
+
+      // Spiele Shuffle-Sound beim Starten einer neuen Runde
+      socket.on('gameStarted', (lobby) => {
+        if(sfxEnabled) {
+          sfxShuffle.currentTime = 0;
+          sfxShuffle.play();
+        }
+      });
+
+      setTimeout(() => {
+        socket.emit('joinGame', { username: username, lobbyId: lobbyId });
+      }, 500);
+    } catch (e) {
+      console.error("Fehler beim Initialisieren der Spielseite:", e);
+      document.body.innerHTML = "<h2>Ein Fehler ist aufgetreten. Bitte lade die Seite neu.</h2>";
+    }
+  });
+</script>
+
   </main>
 </body>
 </html>
