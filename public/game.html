@@ -243,6 +243,86 @@
 	.suit-button:hover {
 	  transform: scale(1.2);
 	}
+	
+	
+	/* Chat Modal Styles */
+#chatModal {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 300px;
+  background: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  border-radius: 5px;
+  z-index: 1000;
+}
+
+#chatModalHeader {
+  background: #34495e;
+  color: #fff;
+  padding: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+#chatModalContent {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  /* Standardmäßig sichtbar – wird per JS umgeschaltet */
+  display: block;
+}
+
+#chatTabs {
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-around;
+}
+
+.chatTab {
+  padding: 5px;
+  border: 1px solid #ccc;
+  background: #f0f0f0;
+  cursor: pointer;
+  font-size: 14px;
+  flex: 1;
+  text-align: center;
+  margin-right: 5px;
+}
+
+.chatTab.active {
+  background: #ddd;
+  font-weight: bold;
+}
+
+#chatMessages {
+  height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 5px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+#chatInputContainer {
+  display: flex;
+  align-items: center;
+}
+
+#chatInput {
+  flex: 1;
+  padding: 5px;
+  font-size: 14px;
+}
+
+#sendChatBtn {
+  padding: 5px 10px;
+  margin-left: 5px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
 
 </style>
 
@@ -289,6 +369,7 @@
         <button id="endTurnBtn" style="display:none;">Passen</button>
       </div>
     </div>
+
     <div id="winningScreen"></div>
     <script>
   document.addEventListener("DOMContentLoaded", function() {
@@ -469,6 +550,19 @@
 
         const deckContainer = document.getElementById('deckContainer');
         deckContainer.textContent = game.deck.length;
+		
+		const discardPile = document.getElementById('discardPileContainer');
+			discardPile.addEventListener("dragover", function(e) {
+			  e.preventDefault(); // Drop zulassen
+			});
+			discardPile.addEventListener("drop", function(e) {
+			  e.preventDefault();
+			  const cardData = e.dataTransfer.getData("text/plain");
+			  if (cardData) {
+				const droppedCard = JSON.parse(cardData);
+				playCard(droppedCard); // Spiele die gezogene Karte
+			  }
+			});
 
         const topCard = game.discardPile[game.discardPile.length - 1];
         const discardPileContainer = document.getElementById('discardPileContainer');
@@ -572,6 +666,11 @@
             cardDiv.addEventListener('click', () => {
               playCard(card);
             });
+			// Drag & Drop: Karte draggable machen
+                cardDiv.setAttribute("draggable", "true");
+                cardDiv.addEventListener('dragstart', function(e) {
+                  e.dataTransfer.setData("text/plain", JSON.stringify(card));
+                });
             handDiv.appendChild(cardDiv);
           });
         } else {
@@ -714,6 +813,103 @@
           sfxShuffle.play();
         }
       });
+	  
+	  
+// Chat-Nachrichten speichern (Arrays für Lobby- und All-Chat)
+let lobbyMessages = [];
+let allMessages = [];
+
+// Funktion zum Aktualisieren der Chat-Anzeige
+function updateChat() {
+  const chatMessages = document.getElementById("chatMessages");
+  chatMessages.innerHTML = "";
+  let messagesToShow = (currentChatTab === "lobby") ? lobbyMessages : allMessages;
+  messagesToShow.forEach(data => {
+    const msgElem = document.createElement("div");
+    msgElem.innerHTML = "<b>" + data.username + ":</b> " + data.message;
+    chatMessages.appendChild(msgElem);
+  });
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Modal und Tab Logik
+const chatModal = document.getElementById("chatModal");
+const chatModalHeader = document.getElementById("chatModalHeader");
+const chatModalContent = document.getElementById("chatModalContent");
+const chatToggleIcon = document.getElementById("chatToggleIcon");
+
+
+// Standardmäßig soll chatModalContent "block" sein.
+chatModalContent.style.display = "block";
+
+chatModalHeader.addEventListener('click', () => {
+  // Wenn aktuell sichtbar (block), dann ausblenden; ansonsten einblenden
+  if (chatModalContent.style.display === "block") {
+    chatModalContent.style.display = "none";
+    chatToggleIcon.innerHTML = "&#9650;"; // Pfeil nach oben
+  } else {
+    chatModalContent.style.display = "block";
+    chatToggleIcon.innerHTML = "&#9660;"; // Pfeil nach unten
+  }
+});
+
+// Standardmäßig modal-Inhalt anzeigen
+chatModalContent.style.display = "block";
+
+// Variablen für den Chat-Typ
+let currentChatTab = "lobby";
+
+// Tab-Umschaltung
+document.getElementById("lobbyTab").addEventListener("click", function() {
+  currentChatTab = "lobby";
+  this.classList.add("active");
+  document.getElementById("allTab").classList.remove("active");
+  updateChat();
+});
+document.getElementById("allTab").addEventListener("click", function() {
+  currentChatTab = "all";
+  this.classList.add("active");
+  document.getElementById("lobbyTab").classList.remove("active");
+  updateChat();
+});
+
+document.getElementById("sendChatBtn").addEventListener("click", function() {
+  const msgInput = document.getElementById("chatInput");
+  const message = msgInput.value.trim();
+  if (message !== "") {
+    // Erstelle das Nachrichtenobjekt; lobbyId nur bei Lobby-Chat hinzufügen
+    let data = { chatType: currentChatTab, username: username, message: message };
+    if (currentChatTab === "lobby") {
+      data.lobbyId = lobbyId;
+    }
+    // Nachricht via Socket senden – NICHT lokal pushen!
+    socket.emit("chatMessage", data);
+    msgInput.value = "";
+  }
+});
+document.getElementById("chatInput").addEventListener("keypress", function(e) {
+  if(e.key === "Enter"){
+    e.preventDefault();
+    document.getElementById("sendChatBtn").click();
+  }
+});
+
+// Empfangene Chatnachrichten
+socket.on("chatMessage", (data) => {
+  // Speichere alle empfangenen Nachrichten in den jeweiligen Arrays,
+  // sodass sie beim Tabwechsel erhalten bleiben.
+  if(data.chatType === "lobby"){
+    lobbyMessages.push(data);
+  } else if(data.chatType === "all"){
+    allMessages.push(data);
+  }
+  // Aktualisiere den Chat, falls der empfangene Typ zum aktuell aktiven Tab passt
+  if(data.chatType === currentChatTab){
+    updateChat();
+  }
+});
+
+	  
 
       setTimeout(() => {
         socket.emit('joinGame', { username: username, lobbyId: lobbyId });
@@ -726,5 +922,22 @@
 </script>
 
   </main>
+<!-- Chat Modal (unten rechts) -->
+<div id="chatModal">
+  <div id="chatModalHeader">
+    Chat <span id="chatToggleIcon">&#9660;</span>
+  </div>
+  <div id="chatModalContent">
+    <div id="chatTabs">
+      <button id="lobbyTab" class="chatTab active">Lobby Chat</button>
+      <button id="allTab" class="chatTab">All Chat</button>
+    </div>
+    <div id="chatMessages"></div>
+    <div id="chatInputContainer">
+      <input type="text" id="chatInput" placeholder="Nachricht eingeben">
+      <button id="sendChatBtn">Senden</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

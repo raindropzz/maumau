@@ -162,6 +162,8 @@ app.post('/login', (req, res) => {
   }
 });
 
+
+
 // Socket-Event: Liefert die Elo des angefragten Nutzers
 io.on('connection', socket => {
   socket.on('getMyElo', (data) => {
@@ -179,6 +181,16 @@ io.on('connection', socket => {
     socket.emit('lobbyList', lobbies);
     emitLobbyList();
   });
+  
+  socket.on('chatMessage', (data) => {
+  if (data.chatType === "lobby" && data.lobbyId) {
+    // Sende Nachricht nur an alle in dieser Lobby
+    io.to(data.lobbyId).emit('chatMessage', data);
+  } else if (data.chatType === "all") {
+    // Sende Nachricht an alle Clients
+    io.emit('chatMessage', data);
+  }
+});
   
   socket.on('createLobby', (data) => {
     const lobby = {
