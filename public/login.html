@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
   <title>Login</title>
   <script>
     // Automatische Weiterleitung, wenn bereits ein Benutzername gespeichert ist
@@ -12,7 +13,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #ecf0f1;
+      background: #34495e;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -29,32 +30,63 @@
       width: 250px;
       padding: 5px;
       margin: 5px;
+	  border: 2px solid #34495e;
+	  border-radius: 4px;
     }
     button {
-      padding: 5px 10px;
+	  width: 263px;
+      padding: 5px;
+      margin: 5px;
       background: #2c3e50;
       color: #fff;
       border: none;
       cursor: pointer;
+	  border: 2px solid #34495e;
+	  border-radius: 4px;
     }
     button:hover {
       background: #34495e;
     }
+	/* Logo links */
+    img.logo {
+      height: 150px;
+    }
+	button.back{
+      background: #fff;
+	  border: 2px solid #ddd;
+	  color: #878787;
+    }
+	button.back:hover{
+      background: #DDD;
+	  border: 2px solid #878787;
+	  color: #878787;
+    }
   </style>
 </head>
 <body>
+		
   <form id="loginForm" action="/login" method="POST">
-    <h2>Login</h2>
-    <input type="text" name="username" placeholder="Benutzername" required>
-    <input type="password" name="password" placeholder="Passwort" required>
-    <button type="submit">Login</button>
+    <center>
+	<img src="logo.png" alt="Logo" class="logo">
+	<b id="errorContainer" style="color:red;"></b><br><br>
+    <input type="text" name="username" placeholder="Benutzername" required><br>
+    <input type="password" name="password" placeholder="Passwort" required><br>
+    <button type="submit">Einloggen</button></center>
   </form>
   <script>
     // Beim Absenden des Formulars wird der Benutzername in localStorage gespeichert.
     document.getElementById("loginForm").addEventListener("submit", function(e) {
       const username = document.querySelector("input[name='username']").value;
-      localStorage.setItem("username", username);
     });
+  </script>
+  <script>
+    // Query-Parameter aus der URL auslesen
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    if (error) {
+      document.getElementById('errorContainer').textContent = decodeURIComponent(error);
+      localStorage.setItem("username", "");
+    }
   </script>
 </body>
 </html>

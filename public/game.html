@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Mau Mau Spiel</title>
+  <title>MauMau.fun</title>
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="/socket.io/socket.io.js"></script>
@@ -329,6 +329,7 @@
 </head>
 <body>
   <header>
+	<link rel="icon" type="image/x-icon" href="favicon.ico">
     <img src="logo.png" alt="Logo" class="logo">
     <img src="maumau.png" alt="MauMau Logo" class="maumau">
     <div id="soundControls">
@@ -920,8 +921,8 @@ socket.on("chatMessage", (data) => {
     }
   });
 </script>
+</main>
 
-  </main>
 <!-- Chat Modal (unten rechts) -->
 <div id="chatModal">
   <div id="chatModalHeader">

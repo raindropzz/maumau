@@ -3,13 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <title>Lobby Browser</title>
-  <!-- Font Awesome CSS (Versuch 1: FA6) -->
+  <!-- Font Awesome CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Falls das nicht funktioniert, kannst du stattdessen FA5 versuchen:
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-  -->
   <script src="/socket.io/socket.io.js"></script>
   <style>
+    /* Grundlegende Styles */
     body {
       font-family: Arial, sans-serif;
       background: #ecf0f1;
@@ -23,28 +21,25 @@
       padding: 20px;
       background: #34495e;
       color: #fff;
-      text-align: center;
       position: relative;
     }
     header img.logo {
       height: 75px;
       margin-right: 15px;
     }
-	/* Zentriere das maumau.png Bild absolut */
+    /* Zentriere das maumau.png Bild absolut */
     header img.maumau {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
       height: 40px;
     }
-    /* Überschrift zentriert (absolut positioniert) */
     header h1.header-center {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
       margin: 0;
     }
-    /* Navigation rechts */
     nav.header-right a {
       color: #fff;
       margin: 0 10px;
@@ -100,9 +95,10 @@
       cursor: pointer;
     }
     button:hover {
-      color: #6699CC;
       background: #34495e;
+      color: #6699CC;
     }
+	
     /* Dropdown-Styles */
     .dropdown {
       position: relative;
@@ -129,9 +125,9 @@
       display: none;
       position: absolute;
       right: 0;
-      background-color: #34495e;
+      background: #34495e;
       min-width: 160px;
-      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
       padding: 12px 16px;
       z-index: 1;
     }
@@ -144,7 +140,7 @@
       font-size: 12px;
       color: #fff;
     }
-	header img.header-center {
+    header img.header-center {
       height: 40px;
     }
     .dropdown-content button {
@@ -159,23 +155,97 @@
       margin-top: 5px;
     }
     .dropdown-content button:hover {
-      color: #6699CC;
       background: #34495e;
+      color: #6699CC;
+    }
+    
+    /* Chat Modal Styles – nur eine Instanz verwenden */
+    #chatModal {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      background: #fff;
+      border: 1px solid #ccc;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      border-radius: 5px;
+      z-index: 1000;
+    }
+    #chatModalHeader {
+      background: #34495e;
+      color: #fff;
+      padding: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    #chatModalContent {
+      padding: 10px;
+      display: block;
+      flex-direction: column;
+    }
+    #chatTabs {
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-around;
+    }
+    .chatTab {
+      flex: 1;
+      padding: 5px;
+      text-align: center;
+      cursor: pointer;
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      margin-right: 5px;
+    }
+    .chatTab.active {
+      background: #ddd;
+      font-weight: bold;
+    }
+    #chatMessages {
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 5px;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+    #chatInputContainer {
+      display: flex;
+      align-items: center;
+    }
+    #chatInput {
+      flex: 1;
+      padding: 5px;
+      font-size: 14px;
+    }
+    #sendChatBtn {
+      padding: 5px 10px;
+      margin-left: 5px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+	#allChatTab, #lobbyChatTab {
+      color: black;
+    }
+	#allChatTab:hover, #lobbyChatTab:hover {
+      color: black;
+	  background: #F0F0F0;
+    }
+	#allChatTab.active:hover, #lobbyChatTab.active:hover {
+      color: black;
+	  background: #DDDDDD;
     }
   </style>
 </head>
 <body>
   <header>
-    <!-- Logo ganz links -->
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
     <img src="logo.png" alt="Logo" class="logo">
-	<img class="header-center maumau" src="maumau.png" alt="Logo">
-    <!-- Überschrift zentriert -->
-    <!--<h1 class="header-center">MauMau.fun</h1>-->
-    <!-- Navigation (Dropdown-Menü) ganz rechts -->
+    <img class="header-center maumau" src="maumau.png" alt="Logo">
     <nav class="header-right">
       <div class="dropdown">
         <button class="dropbtn" id="myName">
-          <!-- Versuche hier, falls FA6 nicht klappt, statt fa-solid fa-user "fas fa-user" zu verwenden -->
           <i class="fa-solid fa-user user-icon"></i>
           <span id="usernameText"></span>
         </button>
@@ -188,7 +258,7 @@
   </header>
   
   <main>
-  <h1 class="header-center">Lobby Browser</h1>
+    <h1 class="header-center">Lobby Browser</h1>
     <form id="createLobbyForm">
       <input type="text" id="lobbyName" placeholder="Lobbynamen (max. 20 Zeichen)" maxlength="20" required>
       <button type="submit">Neue Lobby erstellen</button>
@@ -204,29 +274,34 @@
       if (!username) {
         window.location.href = '/login';
       }
+	  
+	  
+	// Query-Parameter aus der URL auslesen
+	const params = new URLSearchParams(window.location.search);
+	const loggedIn = params.get('loggedIn');
+	if (loggedIn) {
+		let usr = decodeURIComponent(loggedIn);
+		localStorage.setItem("username", usr);
+	}
+	 
       
-      // Setze den Spielernamen im Dropdown-Button
       document.getElementById('usernameText').textContent = username;
       
-      // Hole eigene Elo
       socket.emit('getMyElo', { username: username });
       socket.on('myElo', (data) => {
         document.getElementById('myElo').textContent = "Dein Elo: " + data.elo;
       });
       
-      // Logout-Button im Dropdown
       document.getElementById('logoutBtn').addEventListener('click', () => {
         localStorage.removeItem('username');
         localStorage.removeItem('lobbyId');
         window.location.href = '/logout?username=' + encodeURIComponent(username);
       });
       
-      // Dropdown-Toggle beim Klick auf den Dropbtn
       document.querySelector('.dropbtn').addEventListener('click', function(e) {
         e.stopPropagation();
         this.parentElement.classList.toggle('show');
       });
-      // Schließe das Dropdown, wenn außerhalb geklickt wird
       window.addEventListener('click', function() {
         const dropdowns = document.getElementsByClassName("dropdown");
         for (let i = 0; i < dropdowns.length; i++) {
@@ -236,7 +311,7 @@
           }
         }
       });
-      
+	
       function requestLobbyList() {
         socket.emit('getLobbyList');
       }
@@ -324,7 +399,139 @@
         localStorage.setItem('lobbyId', lobby.id);
         window.location.href = '/game';
       });
+	  
+
     </script>
   </main>
+  
+<!-- Chat Modal (einmalig am Ende des Dokuments) -->
+<div id="chatModal">
+  <div id="chatModalHeader">
+    Chat <span id="chatToggleIcon">&#9660;</span>
+  </div>
+  <div id="chatModalContent">
+    <div id="chatTabs">
+      <!-- All Chat wird jetzt zuerst angezeigt -->
+		<button id="allChatTab" class="chatTab">All Chat</button>
+		<button id="lobbyChatTab" class="chatTab">Lobby Chat</button>
+    </div>
+    <div id="chatMessages"></div>
+    <div id="chatInputContainer">
+      <input type="text" id="chatInput" placeholder="Nachricht eingeben">
+      <button id="sendChatBtn">Senden</button>
+    </div>
+  </div>
+</div>
+  
+<script>
+  // Chat-Nachrichten-Puffer
+  let lobbyMessages = [];
+  let allMessages = [];
+  // Verwende die vorhandene lobbyId (falls vorhanden)
+  let lobbyId = localStorage.getItem("lobbyId");
+  // Standard-Chat-Typ ist jetzt "all"
+  let currentChatTab = "all";
+  
+  // Passe die Tab-Anzeige an: Falls keine LobbyId, dann Lobby-Tab ausblenden
+  updateTabs();
+  
+  socket.on('updateTabs', () => {
+    updateTabs();
+  });
+  
+  function updateTabs() {
+	if (!lobbyId) {
+		document.getElementById("lobbyChatTab").style.display = "none";
+		document.getElementById("allChatTab").classList.add("active");
+	} else {
+		document.getElementById("lobbyChatTab").style.display = "inline-block";
+		// Standardmäßig soll All Chat aktiv bleiben
+		document.getElementById("allChatTab").classList.add("active");
+		document.getElementById("lobbyChatTab").classList.remove("active");
+	}
+  }
+  
+  // Funktion zum Aktualisieren des Chatbereichs
+  function updateChat() {
+    const chatMessagesDiv = document.getElementById("chatMessages");
+    chatMessagesDiv.innerHTML = "";
+    let messagesToShow = (currentChatTab === "lobby") ? lobbyMessages : allMessages;
+    messagesToShow.forEach(data => {
+      const msgElem = document.createElement("div");
+      msgElem.innerHTML = "<b>" + data.username + ":</b> " + data.message;
+      chatMessagesDiv.appendChild(msgElem);
+    });
+    chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+  }
+  
+  // Tab-Umschaltung – beachte: Im HTML sollte der All Chat-Button vor dem Lobby Chat-Button stehen
+  document.getElementById("lobbyChatTab").addEventListener("click", function() {
+    currentChatTab = "lobby";
+    this.classList.add("active");
+    document.getElementById("allChatTab").classList.remove("active");
+    updateChat();
+  });
+  document.getElementById("allChatTab").addEventListener("click", function() {
+    currentChatTab = "all";
+    this.classList.add("active");
+    document.getElementById("lobbyChatTab").classList.remove("active");
+    updateChat();
+  });
+  
+  // Senden der Chatnachricht
+  document.getElementById("sendChatBtn").addEventListener("click", function() {
+    const msgInput = document.getElementById("chatInput");
+    const message = msgInput.value.trim();
+    if (message !== "") {
+      let data = { chatType: currentChatTab, username: username, message: message };
+      if (currentChatTab === "lobby") {
+        data.lobbyId = lobbyId;
+      }
+      socket.emit("chatMessage", data);
+      msgInput.value = "";
+    }
+  });
+  document.getElementById("chatInput").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      document.getElementById("sendChatBtn").click();
+    }
+  });
+  
+  // Empfangene Chatnachrichten
+  socket.on("chatMessage", (data) => {
+    if (data.chatType === "lobby") {
+      lobbyMessages.push(data);
+    } else if (data.chatType === "all") {
+      allMessages.push(data);
+    }
+    if (data.chatType === currentChatTab) {
+      updateChat();
+    }
+  });
+  
+  
+  // Modal-Toggle: Klick auf den Header blendet den Chat-Inhalt ein/aus
+  const chatModalHeader = document.getElementById("chatModalHeader");
+  const chatModalContent = document.getElementById("chatModalContent");
+  const chatToggleIcon = document.getElementById("chatToggleIcon");
+  
+  // Stelle sicher, dass der Inhalt initial sichtbar ist
+  chatModalContent.style.display = "block";
+  
+  chatModalHeader.addEventListener("click", () => {
+    if (chatModalContent.style.display === "block") {
+      chatModalContent.style.display = "none";
+      chatToggleIcon.innerHTML = "&#9650;"; // Pfeil nach oben
+    } else {
+      chatModalContent.style.display = "block";
+      chatToggleIcon.innerHTML = "&#9660;"; // Pfeil nach unten
+    }
+  });
+  
+  // Initiales Update des Chatbereichs
+  updateChat();
+</script>
+
 </body>
 </html>

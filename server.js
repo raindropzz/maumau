@@ -98,6 +98,10 @@ function emitLobbyList() {
   }));
 }
 
+function updateTabs() {
+  io.emit('updateTabs');
+}
+
 // --- Routen ---
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -153,15 +157,16 @@ app.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (accounts[username] && accounts[username].password === password) {
     if (loggedInUsers.has(username)) {
-      return res.send("Dieser Benutzer ist bereits eingeloggt.");
+      //return res.send("Dieser Benutzer ist bereits eingeloggt.");
+	 return res.redirect('/login?error=' + encodeURIComponent('Der Benutzer ist bereits eingeloggt.'));
     }
     loggedInUsers.add(username);
-    res.redirect('/lobby');
+    res.redirect('/lobby?loggedIn=' + encodeURIComponent(username));
   } else {
-    res.send("Ungültige Zugangsdaten.");
+    //res.send("Ungültige Zugangsdaten.");
+	return res.redirect('/login?error=' + encodeURIComponent('Die eingegebenen Zugangsdaten sind ungültig!'));
   }
 });
-
 
 
 // Socket-Event: Liefert die Elo des angefragten Nutzers
@@ -204,6 +209,7 @@ io.on('connection', socket => {
     };
     lobbies.push(lobby);
     socket.join(lobby.id);
+	updateTabs();
     emitLobbyList();
   });
   
@@ -222,6 +228,7 @@ io.on('connection', socket => {
       if (lobby.players.length < lobby.maxPlayers && !lobby.started) {
         lobby.players.push(data.username);
         socket.join(lobby.id);
+		updateTabs();
         emitLobbyList();
       }
     }
@@ -237,6 +244,7 @@ io.on('connection', socket => {
         if (lobby.players.length === 0 || lobby.host === data.username) {
           lobbies = lobbies.filter(l => l.id !== lobby.id);
         }
+		updateTabs();
         emitLobbyList();
       } else {
         socket.emit('errorMessage', 'Du bist nicht in dieser Lobby.');
@@ -285,7 +293,7 @@ io.on('connection', socket => {
     const playerHand = game.hands[data.username];
     const cardIndex = playerHand.findIndex(c => c.rank === data.card.rank && c.suit === data.card.suit);
     if (cardIndex === -1) {
-      socket.emit('errorMessage', 'Du hast diese Karte nicht.');
+      //socket.emit('errorMessage', 'Du hast diese Karte nicht.');
       return;
     }
     const topCard = game.discardPile[game.discardPile.length - 1];
@@ -355,6 +363,7 @@ io.on('connection', socket => {
       io.to(lobby.id).emit('gameEnded', { winner: data.username });
       // Schließe die Lobby, wenn ein Gewinner feststeht.
       lobbies = lobbies.filter(l => l.id !== data.lobbyId);
+	  updateTabs();
       emitLobbyList();
       return;
     }
