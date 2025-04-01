@@ -264,6 +264,7 @@
   padding: 10px;
   cursor: pointer;
   user-select: none;
+  border-radius: 5px;
 }
 
 #chatModalContent {
@@ -289,6 +290,7 @@
   flex: 1;
   text-align: center;
   margin-right: 5px;
+  border-radius: 5px;
 }
 
 .chatTab.active {
@@ -303,6 +305,7 @@
   padding: 5px;
   margin-bottom: 10px;
   font-size: 13px;
+  border-radius: 5px;
 }
 
 #chatInputContainer {
@@ -314,6 +317,8 @@
   flex: 1;
   padding: 5px;
   font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
 
 #sendChatBtn {
@@ -322,8 +327,29 @@
   font-size: 14px;
   cursor: pointer;
 }
-
-
+	#allTab, #lobbyTab {
+      color: black;
+    }
+	#allTab:hover, #lobbyTab:hover {
+      color: black;
+	  background: #F0F0F0;
+    }
+	#allTab.active:hover, #lobbyTab.active:hover {
+      color: black;
+	  background: #DDDDDD;
+    }
+	button {
+      padding: 5px 10px;
+      background: #2c3e50;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+	  border-radius: 4px;
+    }
+    button:hover {
+      background: #34495e;
+      color: #6699CC;
+    }
 </style>
 
 </head>
