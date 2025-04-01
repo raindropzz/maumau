@@ -72,20 +72,22 @@
       padding: 0;
     }
     li {
+	  color: #34495e;
       margin: 10px 0;
       padding: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
+	  border-radius: 4px;
     }
     .openLobby {
-      background: #d4edda;
-      border: 1px solid #28a745;
+      background: #5c9cdb;
+      border: 1px solid #34495e;
     }
     .startedLobby {
-      background: #f8d7da;
-      border: 1px solid #dc3545;
+      background: #5c9cdb;
+      border: 1px solid #34495e;
     }
     button {
       padding: 5px 10px;
@@ -93,6 +95,7 @@
       color: #fff;
       border: none;
       cursor: pointer;
+	  border-radius: 4px;
     }
     button:hover {
       background: #34495e;
@@ -263,9 +266,7 @@
       <input type="text" id="lobbyName" placeholder="Lobbynamen (max. 20 Zeichen)" maxlength="20" required>
       <button type="submit">Neue Lobby erstellen</button>
     </form>
-    <h2>Offene Lobbies:</h2>
     <ul id="openLobbyList"></ul>
-    <h2>Gestartete Lobbies:</h2>
     <ul id="startedLobbyList"></ul>
     <script>
       const socket = io();
@@ -334,8 +335,8 @@
         
         openLobbies.forEach(lobby => {
           let li = document.createElement('li');
-          li.classList.add('openLobby');
-          li.innerHTML = `<strong>${lobby.name}</strong> (ID: ${lobby.id}) - Host: ${lobby.host} (ELO: ${lobby.playerElos[lobby.host]}) - Spieler: ${lobby.players.length}/${lobby.maxPlayers}`;
+          li.classList.add('openLobby'); //(ID: ${lobby.id}) - 
+          li.innerHTML = `<strong>${lobby.name}</strong><strong> Host: ${lobby.host} (ELO: ${lobby.playerElos[lobby.host]})</strong>  <strong>Spieler: ${lobby.players.length}/${lobby.maxPlayers}</strong>`;
           if (!lobby.started) {
             if (lobby.host === username) {
               let startBtn = document.createElement('button');

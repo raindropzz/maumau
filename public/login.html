@@ -67,8 +67,8 @@
 		
   <form id="loginForm" action="/login" method="POST">
     <center>
-	<img src="logo.png" alt="Logo" class="logo">
-	<b id="errorContainer" style="color:red;"></b><br><br>
+	<img src="logo.png" alt="Logo" class="logo"><br>
+	<p id="errorContainer" style="color:red;"></p><br>
     <input type="text" name="username" placeholder="Benutzername" required><br>
     <input type="password" name="password" placeholder="Passwort" required><br>
     <button type="submit">Einloggen</button></center>
@@ -76,7 +76,7 @@
   <script>
     // Beim Absenden des Formulars wird der Benutzername in localStorage gespeichert.
     document.getElementById("loginForm").addEventListener("submit", function(e) {
-      const username = document.querySelector("input[name='username']").value;
+      localStorage.setItem("username", "");
     });
   </script>
   <script>
